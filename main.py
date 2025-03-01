@@ -15,16 +15,9 @@ def get_env_var(key):
     return value
 
 
-def format_german_date(date_str):
-    date_parts = date_str.split("-")
-
-    if len(date_parts) == 3:
-        return f"{date_parts[2]}.{date_parts[1]}.{date_parts[0]}"
-    elif len(date_parts) == 2:
-        return f"{date_parts[1]}.{date_parts[0]}"
-    elif len(date_parts) == 1:
-        return date_parts[0]
-    return date_str
+def resolve_date(date_str):
+    date_parts = date_str.split("-")[::-1]  # Reverse to get year first
+    return tuple(["01"] * (3 - len(date_parts)) + date_parts)
 
 
 def get_playlist_tracks(sp, playlist_id):
@@ -35,10 +28,14 @@ def get_playlist_tracks(sp, playlist_id):
         for item in results["items"]:
             track = item["track"]
             if track:
+                day, month, year = resolve_date(track["album"]["release_date"])
                 tracks.append({
                     "name": track["name"],
-                    "artist": ", ".join([artist["name"] for artist in track["artists"]]),
-                    "release_date": format_german_date(track["album"]["release_date"]),
+                    "artists": [artist["name"] for artist in track["artists"]],
+                    "day": day,
+                    "month": month,
+                    "year": year,
+                    "release_date": track["album"]["release_date"],
                     "url": track["external_urls"]["spotify"],
                     "id": track["id"]
                 })
@@ -68,12 +65,12 @@ def main():
 
     songs = get_playlist_tracks(sp, get_env_var("PLAYLIST_ID"))
 
-    with open("response.json", "w") as file:
+    with open("songs.json", "w") as file:
         json.dump(songs, file, indent=4)
 
     generate_qr_codes(songs)
 
-    typst.compile("hello.typ", output="hello.pdf")
+    typst.compile("hitster.typ", output="hitster.pdf")
 
 
 if __name__ == '__main__':
