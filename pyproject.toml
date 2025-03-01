@@ -9,6 +9,8 @@ readme = "README.md"
 python = "^3.12"
 typst = "^0.13.0"
 spotipy = "^2.25.1"
+qrcode = "^8.0"
+pillow = "^11.1.0"
 
 
 [build-system]

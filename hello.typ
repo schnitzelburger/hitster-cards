@@ -17,8 +17,12 @@
 #grid(
   columns: 3,
   column-gutter: 1.5cm,
-  row-gutter: 1.6cm,
+  row-gutter: 1.5cm,
   ..for song in songs {
-    (back(song),)
+    (back(song),box(
+    height: 5cm,
+    width: 5cm,
+    image("qr_codes/" + song.id + ".svg")
+    ),)
   }
 )
