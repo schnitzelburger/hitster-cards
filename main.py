@@ -20,8 +20,8 @@ def resolve_date(date_str):
     return tuple(["01"] * (3 - len(date_parts)) + date_parts)
 
 
-def get_playlist_tracks(sp, playlist_id):
-    tracks = []
+def get_playlist_songs(sp, playlist_id):
+    songs = []
     results = sp.playlist_tracks(playlist_id)
 
     while results:
@@ -29,7 +29,7 @@ def get_playlist_tracks(sp, playlist_id):
             track = item["track"]
             if track:
                 day, month, year = resolve_date(track["album"]["release_date"])
-                tracks.append({
+                songs.append({
                     "name": track["name"],
                     "artists": [artist["name"] for artist in track["artists"]],
                     "day": day,
@@ -42,7 +42,7 @@ def get_playlist_tracks(sp, playlist_id):
 
         results = sp.next(results) if results["next"] else None
 
-    return tracks
+    return songs
 
 
 def generate_qr_codes(songs):
@@ -63,7 +63,7 @@ def main():
         )
     )
 
-    songs = get_playlist_tracks(sp, get_env_var("PLAYLIST_ID"))
+    songs = get_playlist_songs(sp, get_env_var("PLAYLIST_ID"))
 
     with open("songs.json", "w") as file:
         json.dump(songs, file, indent=4)
