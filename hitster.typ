@@ -7,9 +7,9 @@
 #let margin_x = 2cm
 #let margin_y = 1cm
 
-#let rows = 11
-#let cols = 8
-#let card_size = 2cm
+#let rows = 5
+#let cols = 3
+#let card_size = 5cm
 
 #let marking_padding = 1cm
 
@@ -85,7 +85,7 @@
         height: 0.35 * card_size,
         width: 100%,
         align(
-          center  + horizon,
+          center + horizon,
           text(
             [_ #song.name _],
             size: 0.06 * card_size
@@ -98,7 +98,7 @@
 
 #let marking_line = line(
   stroke: (
-    paint: black,
+    paint: gray,
     thickness: 0.5pt
   ),
   length: marking_padding / 2
@@ -133,22 +133,42 @@
   )
 }
 
+#let pad_page(page) = {
+  let rows = page.chunks(cols)
 
-#let arrange(songs) = {
-  let result = ()
+  //pad left and right
+  let padded_rows = rows.map(
+    row => (
+      marking(0deg),
+      row,
+      marking(180deg)
+    )
+  )
+
+  //pad top and bottom
+  return (
+    ..marking_row(90deg),
+    ..padded_rows.flatten(),
+    ..marking_row(270deg)
+  )
+}
+
+
+#let get_pages(songs) = {
+  let pages = ()
 
   //add test and qr codes
-  for page_songs in songs.chunks(rows*cols) {
+  for page in songs.chunks(rows*cols) {
     let fronts = ()
     let backs = ()
 
-    for song in page_songs {
+    for song in page {
       fronts.push(qr_front_side(song))
       backs.push(text_back_side(song))
     }
 
     //fill remaining slots with empty boxes if needed
-    for _ in range(rows * cols - page_songs.len()) {
+    for _ in range(rows * cols - page.len()) {
       fronts.push(
         square(
           size: card_size
@@ -166,39 +186,18 @@
     let reversed_back_rows = back_rows.map(row => row.rev())
     let reversed_backs = reversed_back_rows.flatten()
 
-    result += fronts
-    result += reversed_backs
+    pages.push(pad_page(fronts))
+    pages.push(pad_page(reversed_backs))
   }
-
-  //add cut marks on the sides
-  let page_rows = result.chunks(cols)
-  let x_padded_rows = page_rows.map(
-    row => (
-      marking(0deg),
-      ..row,
-      marking(180deg)
-    )
-  )
-  result = x_padded_rows.flatten()
-
-  //add top and bottom marks
-  let pages = result.chunks(rows * (cols + 2))
-  let y_padded_pages = pages.map(
-    page => (
-      marking_row(90deg),
-      ..page,
-      marking_row(270deg)
-    )
-  )
-  result = y_padded_pages.flatten()
-
-  return result
+  return pages
 }
 
-#for page in arrange(songs).chunks((rows + 2) * (cols + 2)) {
+#for (i, page) in get_pages(songs).enumerate() {
+  if i != 0 {
+    pagebreak()
+  }
   grid(
     columns: cols + 2,
     ..page
   )
-  pagebreak()
 }
