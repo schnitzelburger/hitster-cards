@@ -6,6 +6,9 @@ import spotipy
 import typst
 from spotipy import SpotifyClientCredentials
 import qrcode.image.svg
+import logging
+
+logging.basicConfig(level=logging.INFO)
 
 
 def get_env_var(key):
@@ -29,16 +32,18 @@ def get_playlist_songs(sp, playlist_id):
             track = item["track"]
             if track:
                 day, month, year = resolve_date(track["album"]["release_date"])
-                songs.append({
-                    "name": track["name"],
-                    "artists": [artist["name"] for artist in track["artists"]],
-                    "day": day,
-                    "month": month,
-                    "year": year,
-                    "release_date": track["album"]["release_date"],
-                    "url": track["external_urls"]["spotify"],
-                    "id": track["id"]
-                })
+                songs.append(
+                    {
+                        "name": track["name"],
+                        "artists": [artist["name"] for artist in track["artists"]],
+                        "day": day,
+                        "month": month,
+                        "year": year,
+                        "release_date": track["album"]["release_date"],
+                        "url": track["external_urls"]["spotify"],
+                        "id": track["id"],
+                    }
+                )
 
         results = sp.next(results) if results["next"] else None
 
@@ -51,7 +56,7 @@ def generate_qr_codes(songs):
     os.mkdir("qr_codes")
 
     for song in songs:
-        img = qrcode.make(song["url"], image_factory=qrcode.image.svg.SvgImage)
+        img = qrcode.make(song["url"], image_factory=qrcode.image.svg.SvgPathImage)
         img.save(f"qr_codes/{song["id"]}.svg")
 
 
@@ -63,17 +68,21 @@ def main():
         )
     )
 
+    logging.info("Starting Spotify song retrieval")
     songs = get_playlist_songs(sp, get_env_var("PLAYLIST_ID"))
 
+    logging.info("Writing songs to file")
     with open("songs.json", "w") as file:
         json.dump(songs, file, indent=4)
 
+    logging.info("Generating QR codes")
     generate_qr_codes(songs)
 
+    logging.info("Compiling PDF")
     typst.compile("hitster.typ", output="hitster.pdf")
 
+    logging.info("Done")
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()
-
-
