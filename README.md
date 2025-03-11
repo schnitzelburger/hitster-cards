@@ -4,7 +4,7 @@ This project generates printable Hitster cards from a Spotify playlist. It retri
 
 | Page Front | Page Back |
 | ------------- | ------------- |
-| Content Cell  | Content Cell  |
+| ![Hitster Front](hitster_front.jpg) | ![Hitster Back](hitster_back.jpg)  |
 
 ## Features
 
