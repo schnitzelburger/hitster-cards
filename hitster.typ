@@ -34,6 +34,7 @@
 #let qr_front_side(song) = {
   square(
     size: card_size,
+    inset: 0.5cm,
     image(
       "qr_codes/" + song.id + ".svg",
       width: 100%
@@ -64,8 +65,8 @@
         align(
           center + horizon,
           text(
-            [#song.day.#song.month.],
-            size: 0.07 * card_size
+            [#song.day #song.month],
+            size: 0.06 * card_size
           )
         ),
       ),
