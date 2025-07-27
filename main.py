@@ -2,6 +2,7 @@ import json
 import os
 import random
 import shutil
+import argparse
 from collections import Counter
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
@@ -93,6 +94,21 @@ def generate_overview_pdf(songs, output_pdf):
 
 
 def main():
+    parser = argparse.ArgumentParser(
+        description="Generate Hitster game cards from a Spotify playlist",
+    )
+    
+    parser.add_argument("playlist_id",
+        help="Spotify playlist ID to generate cards from (overrides PLAYLIST_ID env var)",
+        type=str,
+        nargs="?",
+    )
+    
+    args = parser.parse_args()
+    
+    # Use command line argument if provided, otherwise fall back to environment variable
+    playlist_id = args.playlist_id if args.playlist_id else get_env_var("PLAYLIST_ID")
+    
     sp = spotipy.Spotify(
         auth_manager=SpotifyClientCredentials(
             client_id=get_env_var("CLIENT_ID"),
@@ -100,10 +116,10 @@ def main():
         )
     )
 
-    logging.info("Starting Spotify song retrieval")
-    songs = get_playlist_songs(sp, get_env_var("PLAYLIST_ID"))
+    logging.info(f"Starting Spotify song retrieval for playlist: {playlist_id}")
+    songs = get_playlist_songs(sp, playlist_id)
 
-    logging.info("Writing songs to file")
+    logging.info("Writing songs to songs.json file")
     with open("songs.json", "w") as file:
         json.dump(songs, file, indent=4)
 
@@ -111,10 +127,10 @@ def main():
     generate_qr_codes(songs)
 
     logging.info("Compiling Cards PDF")
-    typst.compile("hitster.typ", output="hitster.pdf")
+    typst.compile("hitster-cards.typ", output="hitster-cards.pdf")
 
     logging.info("Compiling Year Overview PDF")
-    generate_overview_pdf(songs, "overview.pdf")
+    generate_overview_pdf(songs, "hitster-overview.pdf")
 
     logging.info("Done")
 

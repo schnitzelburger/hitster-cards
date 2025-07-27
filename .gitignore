@@ -1,6 +1,7 @@
 .venv
 .idea
 .cache
+.env
 qr_codes
 songs.json
 *.pdf
