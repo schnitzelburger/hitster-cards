@@ -1,0 +1,18 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+spotipy = "~=2.25.1"
+qrcode = "~=8.0"
+pillow = "~=11.1.0"
+matplotlib = "~=3.10.1"
+typst = "~=0.13.0"
+requests = "~=2.32.3"
+redis = "~=5.2.1"
+
+[dev-packages]
+
+[requires]
+python_version = "3.12"

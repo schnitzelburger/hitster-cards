@@ -1,3 +1,6 @@
 .venv
 .idea
+.cache
 qr_codes
+songs.json
+*.pdf
