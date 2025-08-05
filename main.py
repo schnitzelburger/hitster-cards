@@ -6,6 +6,7 @@ import argparse
 from collections import Counter
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
+import locale
 
 import qrcode
 import spotipy
@@ -32,18 +33,32 @@ def get_env_var(key):
     return value
 
 
-def resolve_date(date_str):
+def resolve_date(date_str, month_lang=None):
     date_parts = date_str.split("-")[::-1]
     parts = [""] * (3 - len(date_parts)) + date_parts
 
     day = f"{int(parts[0])}." if parts[0] else ""
-    month = calendar.month_name[int(parts[1])] if parts[1] else ""
+    if parts[1]:
+        if month_lang == "de":
+            try:
+                locale.setlocale(locale.LC_TIME, "de_DE.UTF-8")
+            except locale.Error:
+                pass
+        elif month_lang == "en":
+            try:
+                locale.setlocale(locale.LC_TIME, "en_US.UTF-8")
+            except locale.Error:
+                pass
+        # If month_lang is None, use system locale (do not set)
+        month = calendar.month_name[int(parts[1])]
+    else:
+        month = ""
     year = parts[2]
 
     return day, month, year
 
 
-def get_playlist_songs(sp, playlist_id, verbose=False):
+def get_playlist_songs(sp, playlist_id, verbose=False, month_lang=None):
     songs = []
     results = sp.playlist_tracks(playlist_id)
 
@@ -51,7 +66,7 @@ def get_playlist_songs(sp, playlist_id, verbose=False):
         for item in results["items"]:
             track = item["track"]
             if track:
-                day, month, year = resolve_date(track["album"]["release_date"])
+                day, month, year = resolve_date(track["album"]["release_date"], month_lang=month_lang)
                 song = {
                     "name": track["name"],
                     "artists": [artist["name"] for artist in track["artists"]],
@@ -114,6 +129,9 @@ def main():
         nargs="?",
     )
     parser.add_argument("-v", "--verbose", action="store_true", help="Enable verbose output (show each song)")
+    parser.add_argument("--cards-pdf", default="hitster-cards.pdf", help="Output PDF filename for cards")
+    parser.add_argument("--overview-pdf", default="hitster-overview.pdf", help="Output PDF filename for year overview")
+    parser.add_argument("--month-lang", choices=["de", "en"], default=None, help="Language for month names in release dates (default: system locale)")
     
     args = parser.parse_args()
     
@@ -134,9 +152,10 @@ def main():
     )
 
     logger.info(f"Starting Spotify song retrieval for playlist: {playlist_id}")
-    songs = get_playlist_songs(sp, playlist_id, verbose=args.verbose)
+    songs = get_playlist_songs(sp, playlist_id, verbose=args.verbose, month_lang=args.month_lang)
 
     logger.info("Writing songs to songs.json file")
+    logger.info(f"Language for month names in release dates: {args.month_lang if args.month_lang else 'default system locale'}")
     with open("songs.json", "w") as file:
         json.dump(songs, file, indent=4)
 
@@ -144,10 +163,10 @@ def main():
     generate_qr_codes(songs)
 
     logger.info("Compiling Cards PDF")
-    typst.compile("hitster-cards.typ", output="hitster-cards.pdf")
+    typst.compile("hitster-cards.typ", output=args.cards_pdf)
 
     logger.info("Compiling Year Overview PDF")
-    generate_overview_pdf(songs, "hitster-overview.pdf")
+    generate_overview_pdf(songs, args.overview_pdf)
 
     logger.info("Done")
 
