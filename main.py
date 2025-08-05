@@ -33,11 +33,11 @@ def get_env_var(key):
     return value
 
 
-def resolve_date(date_str, month_lang=None):
+def resolve_date(date_str, month_lang=None, no_day=False):
     date_parts = date_str.split("-")[::-1]
     parts = [""] * (3 - len(date_parts)) + date_parts
 
-    day = f"{int(parts[0])}." if parts[0] else ""
+    day = "" if no_day else (f"{int(parts[0])}." if parts[0] else "")
     if parts[1]:
         if month_lang == "de":
             try:
@@ -49,7 +49,6 @@ def resolve_date(date_str, month_lang=None):
                 locale.setlocale(locale.LC_TIME, "en_US.UTF-8")
             except locale.Error:
                 pass
-        # If month_lang is None, use system locale (do not set)
         month = calendar.month_name[int(parts[1])]
     else:
         month = ""
@@ -58,7 +57,7 @@ def resolve_date(date_str, month_lang=None):
     return day, month, year
 
 
-def get_playlist_songs(sp, playlist_id, verbose=False, month_lang=None):
+def get_playlist_songs(sp, playlist_id, verbose=False, month_lang=None, no_day=False):
     songs = []
     results = sp.playlist_tracks(playlist_id)
 
@@ -66,7 +65,7 @@ def get_playlist_songs(sp, playlist_id, verbose=False, month_lang=None):
         for item in results["items"]:
             track = item["track"]
             if track:
-                day, month, year = resolve_date(track["album"]["release_date"], month_lang=month_lang)
+                day, month, year = resolve_date(track["album"]["release_date"], month_lang=month_lang, no_day=no_day)
                 song = {
                     "name": track["name"],
                     "artists": [artist["name"] for artist in track["artists"]],
@@ -132,6 +131,7 @@ def main():
     parser.add_argument("--cards-pdf", default="hitster-cards.pdf", help="Output PDF filename for cards")
     parser.add_argument("--overview-pdf", default="hitster-overview.pdf", help="Output PDF filename for year overview")
     parser.add_argument("--month-lang", choices=["de", "en"], default=None, help="Language for month names in release dates (default: system locale)")
+    parser.add_argument("--no-day", action="store_true", help="Omit day from release date (set day to empty string)")
     
     args = parser.parse_args()
     
@@ -152,7 +152,7 @@ def main():
     )
 
     logger.info(f"Starting Spotify song retrieval for playlist: {playlist_id}")
-    songs = get_playlist_songs(sp, playlist_id, verbose=args.verbose, month_lang=args.month_lang)
+    songs = get_playlist_songs(sp, playlist_id, verbose=args.verbose, month_lang=args.month_lang, no_day=args.no_day)
 
     logger.info("Writing songs to songs.json file")
     logger.info(f"Language for month names in release dates: {args.month_lang if args.month_lang else 'default system locale'}")
