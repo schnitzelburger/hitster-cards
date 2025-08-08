@@ -33,7 +33,7 @@ def get_env_var(key):
     return value
 
 
-def resolve_date(date_str, month_lang=None, no_day=False):
+def resolve_date(date_str: str, month_lang=None, no_day=False) -> tuple[str, str, str]:
     date_parts = date_str.split("-")[::-1]
     parts = [""] * (3 - len(date_parts)) + date_parts
 
@@ -57,7 +57,7 @@ def resolve_date(date_str, month_lang=None, no_day=False):
     return day, month, year
 
 
-def get_playlist_songs(sp, playlist_id, verbose=False, month_lang=None, no_day=False):
+def get_playlist_songs(sp, playlist_id, verbose=False, month_lang=None, no_day=False) -> list[dict[str, str]]:
     songs = []
     results = sp.playlist_tracks(playlist_id)
 
@@ -89,7 +89,7 @@ def get_playlist_songs(sp, playlist_id, verbose=False, month_lang=None, no_day=F
     return songs
 
 
-def generate_qr_codes(songs):
+def generate_qr_codes(songs: list[dict[str, str]]) -> None:
     if os.path.isdir("qr_codes"):
         shutil.rmtree("qr_codes")
     os.mkdir("qr_codes")
@@ -99,7 +99,7 @@ def generate_qr_codes(songs):
         img.save(f"qr_codes/{song['id']}.svg")
 
 
-def generate_overview_pdf(songs, output_pdf):
+def generate_overview_pdf(songs: list[dict[str, str]], output_pdf: str) -> None:
     year_counts = Counter(int(song["year"]) for song in songs if "year" in song)
 
     min_year = min(year_counts.keys())
