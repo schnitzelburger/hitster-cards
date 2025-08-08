@@ -89,14 +89,19 @@ def get_playlist_songs(sp, playlist_id, verbose=False, month_lang=None, no_day=F
     return songs
 
 
-def generate_qr_codes(songs: list[dict[str, str]]) -> None:
+def generate_qr_codes(songs: list[dict[str, str]], qr_type: str = "url") -> None:
     if os.path.isdir("qr_codes"):
         shutil.rmtree("qr_codes")
     os.mkdir("qr_codes")
 
     for song in songs:
-        img = qrcode.make(song["url"], image_factory=qrcode.image.svg.SvgPathImage)
-        img.save(f"qr_codes/{song['id']}.svg")
+        if qr_type == "id":
+            qr_content = song["id"]
+        else: # default to "url"
+            qr_content = song["url"]
+        img = qrcode.make(qr_content, image_factory=qrcode.image.svg.SvgPathImage)
+        with open(f"qr_codes/{song['id']}.svg", "wb") as f:
+            img.save(f)
 
 
 def generate_overview_pdf(songs: list[dict[str, str]], output_pdf: str) -> None:
@@ -132,6 +137,7 @@ def main():
     parser.add_argument("--overview-pdf", default="hitster-overview.pdf", help="Output PDF filename for year overview")
     parser.add_argument("--month-lang", choices=["de", "en"], default=None, help="Language for month names in release dates (default: system locale)")
     parser.add_argument("--no-day", action="store_true", help="Omit day from release date (set day to empty string)")
+    parser.add_argument("--qr-type", choices=["url", "id"], default="url", help="QR code content: url (default) or id")
     
     args = parser.parse_args()
     
@@ -144,6 +150,13 @@ def main():
     playlist_id = args.playlist_id if args.playlist_id else get_env_var("PLAYLIST_ID")
     logger.info(f"Using playlist ID: {playlist_id} (https://open.spotify.com/playlist/{playlist_id})")
 
+    logger.info(f"Language for month names in release dates: {args.month_lang if args.month_lang else 'default system locale'}")
+    logger.info(f"Day in release date: {'omitted' if args.no_day else 'included'}")
+    logger.info(f"QR code content: {args.qr_type}")
+    logger.info(f"Cards PDF output: {args.cards_pdf}")
+    logger.info(f"Overview PDF output: {args.overview_pdf}")
+    logger.info("")
+
     sp = spotipy.Spotify(
         auth_manager=SpotifyClientCredentials(
             client_id=get_env_var("CLIENT_ID"),
@@ -155,12 +168,11 @@ def main():
     songs = get_playlist_songs(sp, playlist_id, verbose=args.verbose, month_lang=args.month_lang, no_day=args.no_day)
 
     logger.info("Writing songs to songs.json file")
-    logger.info(f"Language for month names in release dates: {args.month_lang if args.month_lang else 'default system locale'}")
     with open("songs.json", "w") as file:
         json.dump(songs, file, indent=4)
 
     logger.info("Generating QR codes")
-    generate_qr_codes(songs)
+    generate_qr_codes(songs, qr_type=args.qr_type)
 
     logger.info("Compiling Cards PDF")
     typst.compile("hitster-cards.typ", output=args.cards_pdf)
