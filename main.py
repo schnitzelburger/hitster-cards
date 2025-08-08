@@ -104,7 +104,7 @@ def generate_qr_codes(songs: list[dict[str, str]], qr_type: str = "url") -> None
             img.save(f)
 
 
-def generate_overview_pdf(songs: list[dict[str, str]], output_pdf: str) -> None:
+def generate_year_distribution_pdf(songs: list[dict[str, str]], output_pdf: str) -> None:
     year_counts = Counter(int(song["year"]) for song in songs if "year" in song)
 
     min_year = min(year_counts.keys())
@@ -134,7 +134,7 @@ def main():
     )
     parser.add_argument("-v", "--verbose", action="store_true", help="Enable verbose output (show each song)")
     parser.add_argument("--cards-pdf", default="hitster-cards.pdf", help="Output PDF filename for cards")
-    parser.add_argument("--overview-pdf", default="hitster-overview.pdf", help="Output PDF filename for year overview")
+    parser.add_argument("--overview-pdf", default="year-distribution.pdf", help="Output PDF filename for year distribution bar chart")
     parser.add_argument("--month-lang", choices=["de", "en"], default=None, help="Language for month names in release dates (default: system locale)")
     parser.add_argument("--no-day", action="store_true", help="Omit day from release date (set day to empty string)")
     parser.add_argument("--qr-type", choices=["url", "id"], default="url", help="QR code content: url (default) or id")
@@ -177,8 +177,8 @@ def main():
     logger.info("Compiling Cards PDF")
     typst.compile("hitster-cards.typ", output=args.cards_pdf)
 
-    logger.info("Compiling Year Overview PDF")
-    generate_overview_pdf(songs, args.overview_pdf)
+    logger.info("Compiling Year Distribution PDF")
+    generate_year_distribution_pdf(songs, args.overview_pdf)
 
     logger.info("Done")
 
