@@ -71,7 +71,7 @@ def generate_qr_codes(songs):
 
     for song in songs:
         img = qrcode.make(song["url"], image_factory=qrcode.image.svg.SvgPathImage)
-        img.save(f"qr_codes/{song["id"]}.svg")
+        img.save(f"qr_codes/{song['id']}.svg")
 
 
 def generate_overview_pdf(songs, output_pdf):
