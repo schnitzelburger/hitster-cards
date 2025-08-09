@@ -7,6 +7,7 @@ from collections import Counter
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 import locale
+import datetime
 
 import qrcode
 import spotipy
@@ -57,35 +58,47 @@ def resolve_date(date_str: str, month_lang=None, no_day=False) -> tuple[str, str
     return day, month, year
 
 
-def get_playlist_songs(sp, playlist_id, verbose=False, month_lang=None, no_day=False) -> list[dict[str, str]]:
+def get_playlist_songs(sp, playlist_id, verbose=False, month_lang=None, no_day=False, added_after=None) -> list[dict[str, str]]:
     songs = []
     results = sp.playlist_tracks(playlist_id)
 
     while results:
+        # with open("results.json", "w") as f:
+        #     json.dump(results, f, indent=4)
         for item in results["items"]:
             track = item["track"]
             if track:
                 day, month, year = resolve_date(track["album"]["release_date"], month_lang=month_lang, no_day=no_day)
-                song = {
-                    "name": track["name"],
-                    "artists": [artist["name"] for artist in track["artists"]],
-                    "day": day,
-                    "month": month,
-                    "year": year,
-                    "release_date": track["album"]["release_date"],
-                    "url": track["external_urls"]["spotify"],
-                    "id": track["id"],
-                }
-                songs.append(song)                
-                if verbose:
-                    artists_str = ', '.join(song['artists'])
-                    if len(artists_str) > 24:
-                        artists_str = artists_str[:23] + '…'
-                    logger.debug(f"Song: {song['name']:<28} | Artists: {artists_str:<24} | Release Date: {song['release_date']}")
-
+                added_at = item["added_at"]  # format: "YYYY-MM-DDTHH:MM:SSZ"
+                # Only add if added_after is not set or added_at > added_after
+                add_song = True
+                if added_after:
+                    try:
+                        added_after_dt = datetime.datetime.strptime(added_after, "%Y-%m-%d")
+                        added_at_dt = datetime.datetime.strptime(added_at[:10], "%Y-%m-%d")
+                        add_song = added_at_dt > added_after_dt
+                    except Exception as e:
+                        logger.warning(f"Could not filter by added_after: {e}")
+                        add_song = True
+                if add_song:
+                    song = {
+                        "name": track["name"],
+                        "artists": [artist["name"] for artist in track["artists"]],
+                        "day": day,
+                        "month": month,
+                        "year": year,
+                        "release_date": track["album"]["release_date"],
+                        "url": track["external_urls"]["spotify"],
+                        "id": track["id"],
+                    }
+                    songs.append(song)
+                    if verbose:
+                        artists_str = ', '.join(song['artists'])
+                        if len(artists_str) > 24:
+                            artists_str = artists_str[:23] + '…'
+                        logger.debug(f"Song: {song['name']:<28} | Artists: {artists_str:<24} | Release Date: {song['release_date']}")
         results = sp.next(results) if results["next"] else None
 
-    # random.shuffle(songs)
     # Sort songs by release_date (YYYY-MM-DD)
     songs.sort(key=lambda song: song.get("release_date") or "0000-00-00")
     return songs
@@ -129,17 +142,14 @@ def main():
         description="Generate Hitster game cards from a Spotify playlist",
     )
     
-    parser.add_argument("playlist_id",
-        help="Spotify playlist ID to generate cards from (overrides PLAYLIST_ID env var)",
-        type=str,
-        nargs="?",
-    )
+    parser.add_argument("playlist_id", type=str, nargs="?", help="Spotify playlist ID to generate cards from (overrides PLAYLIST_ID env var)", default=get_env_var("PLAYLIST_ID"))
     parser.add_argument("-v", "--verbose", action="store_true", help="Enable verbose output (show each song)")
     parser.add_argument("--cards-pdf", default="hitster-cards.pdf", help="Output PDF filename for cards")
     parser.add_argument("--overview-pdf", default="year-distribution.pdf", help="Output PDF filename for year distribution bar chart")
     parser.add_argument("--month-lang", choices=["de", "en"], default=None, help="Language for month names in release dates (default: system locale)")
     parser.add_argument("--no-day", action="store_true", help="Omit day from release date (set day to empty string)")
     parser.add_argument("--qr-type", choices=["url", "id"], default="url", help="QR code content: url (default) or id")
+    parser.add_argument("--added-after", type=str, help="Only include songs added after this date (YYYY-MM-DD)")
     
     args = parser.parse_args()
     
@@ -149,9 +159,7 @@ def main():
     else:
         logger.setLevel(logging.INFO)
     
-    playlist_id = args.playlist_id if args.playlist_id else get_env_var("PLAYLIST_ID")
-    logger.info(f"Using playlist ID: {playlist_id} (https://open.spotify.com/playlist/{playlist_id})")
-
+    logger.info(f"Using playlist ID: {args.playlist_id} (https://open.spotify.com/playlist/{args.playlist_id})")
     logger.info(f"Language for month names in release dates: {args.month_lang if args.month_lang else 'default system locale'}")
     logger.info(f"Day in release date: {'omitted' if args.no_day else 'included'}")
     logger.info(f"QR code content: {args.qr_type}")
@@ -166,8 +174,8 @@ def main():
         )
     )
 
-    logger.info(f"Starting Spotify song retrieval for playlist: {playlist_id}")
-    songs = get_playlist_songs(sp, playlist_id, verbose=args.verbose, month_lang=args.month_lang, no_day=args.no_day)
+    logger.info(f"Starting Spotify song retrieval for playlist: {args.playlist_id}")
+    songs = get_playlist_songs(sp, args.playlist_id, verbose=args.verbose, month_lang=args.month_lang, no_day=args.no_day, added_after=args.added_after)
 
     logger.info("Writing songs to songs.json file")
     with open("songs.json", "w") as file:
