@@ -86,6 +86,8 @@ def get_playlist_songs(sp, playlist_id, verbose=False, month_lang=None, no_day=F
         results = sp.next(results) if results["next"] else None
 
     # random.shuffle(songs)
+    # Sort songs by release_date (YYYY-MM-DD)
+    songs.sort(key=lambda song: song.get("release_date") or "0000-00-00")
     return songs
 
 
