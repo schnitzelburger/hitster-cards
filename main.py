@@ -158,14 +158,27 @@ def main():
         logger.setLevel(logging.DEBUG)
     else:
         logger.setLevel(logging.INFO)
-    
-    logger.info(f"Using playlist ID: {args.playlist_id} (https://open.spotify.com/playlist/{args.playlist_id})")
-    logger.info(f"Language for month names in release dates: {args.month_lang if args.month_lang else 'default system locale'}")
-    logger.info(f"Day in release date: {'omitted' if args.no_day else 'included'}")
-    logger.info(f"QR code content: {args.qr_type}")
-    logger.info(f"Cards PDF output: {args.cards_pdf}")
-    logger.info(f"Overview PDF output: {args.overview_pdf}")
-    logger.info("")
+
+    # Overview of used arguments
+    logger.info("""
+========== Hitster Cards - Argument Overview ==========
+Playlist ID:         %s
+Month Language:      %s
+Day in Release Date: %s
+QR Code Content:     %s
+Cards PDF Output:    %s
+Year Distribution:   %s
+Added After:         %s
+=======================================================
+""" % (
+        args.playlist_id,
+        args.month_lang if args.month_lang else 'default system locale',
+        'omitted' if args.no_day else 'included',
+        args.qr_type,
+        args.cards_pdf,
+        args.overview_pdf,
+        args.added_after if args.added_after else 'not set',
+    ))
 
     sp = spotipy.Spotify(
         auth_manager=SpotifyClientCredentials(
@@ -176,6 +189,8 @@ def main():
 
     logger.info(f"Starting Spotify song retrieval for playlist: {args.playlist_id}")
     songs = get_playlist_songs(sp, args.playlist_id, verbose=args.verbose, month_lang=args.month_lang, no_day=args.no_day, added_after=args.added_after)
+
+    logger.info(f"Number of songs (after filtering): {len(songs)}")
 
     logger.info("Writing songs to songs.json file")
     with open("songs.json", "w") as file:
