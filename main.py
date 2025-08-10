@@ -145,7 +145,7 @@ def main():
         description="Generate Hitster game cards from a Spotify playlist",
     )
     
-    parser.add_argument("playlist_id", type=str, nargs="?", help="Spotify playlist ID to generate cards from (overrides PLAYLIST_ID env var)", default=get_env_var("PLAYLIST_ID"))
+    parser.add_argument("playlist_id", type=str, nargs="?", help="Spotify playlist ID to generate cards from (overrides PLAYLIST_ID env var)", default=None)
     parser.add_argument("-v", "--verbose", action="store_true", help="Enable verbose output (show each song)")
     parser.add_argument("--cards-pdf", default="hitster-cards.pdf", help="Output PDF filename for cards")
     parser.add_argument("--overview-pdf", default="year-distribution.pdf", help="Output PDF filename for year distribution bar chart")
@@ -155,7 +155,11 @@ def main():
     parser.add_argument("--added-after", type=str, help="Only include songs added after this date (YYYY-MM-DD)")
     
     args = parser.parse_args()
-    
+
+    playlist_id = args.playlist_id or os.getenv("PLAYLIST_ID")
+    if not playlist_id:
+        parser.error("No playlist_id provided and PLAYLIST_ID env var not set.")
+
     # Set logging level for this module only
     if args.verbose:
         logger.setLevel(logging.DEBUG)
@@ -174,7 +178,7 @@ Year Distribution:   %s
 Added After:         %s
 =======================================================
 """ % (
-        args.playlist_id,
+        playlist_id,
         args.month_lang if args.month_lang else 'default system locale',
         'omitted' if args.no_day else 'included',
         args.qr_type,
@@ -190,8 +194,8 @@ Added After:         %s
         )
     )
 
-    logger.info(f"Starting Spotify song retrieval for playlist: {args.playlist_id}")
-    songs = get_playlist_songs(sp, args.playlist_id, verbose=args.verbose, month_lang=args.month_lang, no_day=args.no_day, added_after=args.added_after)
+    logger.info(f"Starting Spotify song retrieval for playlist: {playlist_id}")
+    songs = get_playlist_songs(sp, playlist_id, verbose=args.verbose, month_lang=args.month_lang, no_day=args.no_day, added_after=args.added_after)
 
     logger.info(f"Number of songs (after filtering): {len(songs)}")
 
