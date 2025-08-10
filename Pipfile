@@ -11,6 +11,7 @@ matplotlib = "~=3.10.1"
 typst = "~=0.13.0"
 requests = "~=2.32.3"
 redis = "~=5.2.1"
+python-dotenv = "*"
 
 [dev-packages]
 

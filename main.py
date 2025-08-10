@@ -9,6 +9,9 @@ from matplotlib.backends.backend_pdf import PdfPages
 import locale
 import datetime
 
+from dotenv import load_dotenv
+load_dotenv()
+
 import qrcode
 import spotipy
 import typst
