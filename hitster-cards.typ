@@ -28,7 +28,11 @@
   )
 )
 
-#set text(font: "New Computer Modern")
+// set font
+#set text(font: (
+  sys.inputs.at("font", default: "New Computer Modern"), // use input font or default
+  "New Computer Modern" // fallback if input font is invalid
+))
 
 #set square(
   stroke: none

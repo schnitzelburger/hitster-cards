@@ -150,7 +150,8 @@ def main():
     parser.add_argument("--no-day", action="store_true", help="Omit day from release date (set day to empty string)")
     parser.add_argument("--qr-type", choices=["url", "id"], default="url", help="QR code content: url (default) or id")
     parser.add_argument("--added-after", type=str, help="Only include songs added after this date (YYYY-MM-DD)")
-    parser.add_argument("--edition", type=str, default=None, help="Edition label to display on the cards (e.g., 'Summer 2025').")
+    parser.add_argument("--edition", type=str, default=None, help="Edition label to display on the cards (e.g., 'Summer 2025')")
+    parser.add_argument("--font", type=str, default=None, help="Font family to use in the Typst document (e.g., 'Libertinus Serif', 'Ubuntu'). The font family must be installed on the system!")
     args = parser.parse_args()
 
     playlist_id = args.playlist_id or os.getenv("PLAYLIST_ID")
@@ -174,6 +175,7 @@ Cards PDF Output:    %s
 Year Distribution:   %s
 Added After:         %s
 Edition:             %s
+Font:                %s
 =======================================================
 """ % (
         playlist_id,
@@ -184,6 +186,7 @@ Edition:             %s
         args.overview_pdf,
         args.added_after if args.added_after else 'not set',
         args.edition if args.edition else 'not set',
+        args.font if args.font else 'default font (New Computer Modern)'
     ))
 
     sp = spotipy.Spotify(
@@ -209,6 +212,8 @@ Edition:             %s
     sys_inputs = {}
     if args.edition:
         sys_inputs["edition"] = args.edition
+    if args.font:
+        sys_inputs["font"] = args.font
     typst.compile("hitster-cards.typ", output=args.cards_pdf, sys_inputs=sys_inputs)
 
     logger.info("Compiling Year Distribution PDF")
