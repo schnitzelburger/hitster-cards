@@ -1,6 +1,9 @@
 #let songs = json("songs.json")
 
-//this is a4
+// edition if defined, otherwise empty
+#let edition = sys.inputs.at("edition", default:"")
+
+// this is DIN A4
 #let page_width = 210mm
 #let page_height = 297mm
 
@@ -47,6 +50,7 @@
     size: card_size,
     inset: 0.05 * card_size,
     stack(
+      // Artist
       block(
         height: 0.25 * card_size,
         width: 100%,
@@ -59,6 +63,7 @@
           )
         ),
       ),
+      // Day and Month
       block(
         height: 0.1 * card_size,
         width: 100%,
@@ -70,6 +75,7 @@
           )
         ),
       ),
+      // Year
       block(
         height: 0.2 * card_size,
         width: 100%,
@@ -82,6 +88,7 @@
           )
         ),
       ),
+      // Song Name
       block(
         height: 0.35 * card_size,
         width: 100%,
@@ -91,6 +98,15 @@
             [_ #song.name _],
             size: 0.06 * card_size
           )
+        )
+      ),
+      // Edition on bottom right corner (if defined)
+      align(
+        right + bottom,
+        text(
+          [ #edition ],
+          size: 0.04 * card_size,
+          fill: luma(35%)
         )
       )
     )
@@ -102,7 +118,7 @@
     paint: gray,
     thickness: 0.5pt
   ),
-  length: marking_padding / 2
+  length: marking_padding * 0.8  // 13.5cm for full lines
 )
 
 //a rotatable box with cut markings
