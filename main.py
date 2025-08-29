@@ -141,10 +141,7 @@ def generate_year_distribution_pdf(songs: list[dict[str, str]], output_pdf: str)
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        description="Generate Hitster game cards from a Spotify playlist",
-    )
-    
+    parser = argparse.ArgumentParser(description="Generate Hitster game cards from a Spotify playlist")
     parser.add_argument("playlist_id", type=str, nargs="?", help="Spotify playlist ID to generate cards from (overrides PLAYLIST_ID env var)", default=None)
     parser.add_argument("-v", "--verbose", action="store_true", help="Enable verbose output (show each song)")
     parser.add_argument("--cards-pdf", default="hitster-cards.pdf", help="Output PDF filename for cards")
@@ -153,7 +150,8 @@ def main():
     parser.add_argument("--no-day", action="store_true", help="Omit day from release date (set day to empty string)")
     parser.add_argument("--qr-type", choices=["url", "id"], default="url", help="QR code content: url (default) or id")
     parser.add_argument("--added-after", type=str, help="Only include songs added after this date (YYYY-MM-DD)")
-    
+    parser.add_argument("--edition", type=str, default=None, help="Edition label to display on the cards (e.g., 'Summer 2025')")
+    parser.add_argument("--font", type=str, default=None, help="Font family to use in the Typst document (e.g., 'Libertinus Serif', 'Ubuntu'). The font family must be installed on the system!")
     args = parser.parse_args()
 
     playlist_id = args.playlist_id or os.getenv("PLAYLIST_ID")
@@ -176,6 +174,8 @@ QR Code Content:     %s
 Cards PDF Output:    %s
 Year Distribution:   %s
 Added After:         %s
+Edition:             %s
+Font:                %s
 =======================================================
 """ % (
         playlist_id,
@@ -185,6 +185,8 @@ Added After:         %s
         args.cards_pdf,
         args.overview_pdf,
         args.added_after if args.added_after else 'not set',
+        args.edition if args.edition else 'not set',
+        args.font if args.font else 'default font (New Computer Modern)'
     ))
 
     sp = spotipy.Spotify(
@@ -207,7 +209,12 @@ Added After:         %s
     generate_qr_codes(songs, qr_type=args.qr_type)
 
     logger.info("Compiling Cards PDF")
-    typst.compile("hitster-cards.typ", output=args.cards_pdf)
+    sys_inputs = {}
+    if args.edition:
+        sys_inputs["edition"] = args.edition
+    if args.font:
+        sys_inputs["font"] = args.font
+    typst.compile("hitster-cards.typ", output=args.cards_pdf, sys_inputs=sys_inputs)
 
     logger.info("Compiling Year Distribution PDF")
     generate_year_distribution_pdf(songs, args.overview_pdf)
