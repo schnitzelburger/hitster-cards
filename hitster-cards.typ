@@ -88,7 +88,7 @@
           text(
             weight: "black",
             song.year,
-            size: 0.28 * card_size
+            size: if ("custom" in song) and song.custom == "true" { 0.12 * card_size } else { 0.28 * card_size }
           )
         ),
       ),
@@ -99,7 +99,7 @@
         align(
           center + horizon,
           text(
-            [_ #song.name _],
+            if ("custom" in song) and song.custom == "true" {[ #song.name ]} else {[_ #song.name _]},
             size: 0.06 * card_size
           )
         )

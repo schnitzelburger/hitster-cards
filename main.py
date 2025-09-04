@@ -61,7 +61,7 @@ def resolve_date(date_str: str, month_lang=None, no_day=False) -> tuple[str, str
     return day, month, year
 
 
-def get_playlist_songs(sp, playlist_id, verbose=False, month_lang=None, no_day=False, added_after=None) -> list[dict[str, str]]:
+def get_playlist_songs(sp, playlist_id, verbose=False, month_lang=None, no_day=False, added_after=None) -> list[dict]:
     songs = []
     results = sp.playlist_tracks(playlist_id)
 
@@ -107,7 +107,7 @@ def get_playlist_songs(sp, playlist_id, verbose=False, month_lang=None, no_day=F
     return songs
 
 
-def generate_qr_codes(songs: list[dict[str, str]], qr_type: str = "url") -> None:
+def generate_qr_codes(songs: list[dict], qr_type: str = "url") -> None:
     if os.path.isdir("qr_codes"):
         shutil.rmtree("qr_codes")
     os.mkdir("qr_codes")
@@ -122,8 +122,12 @@ def generate_qr_codes(songs: list[dict[str, str]], qr_type: str = "url") -> None
             img.save(f)
 
 
-def generate_year_distribution_pdf(songs: list[dict[str, str]], output_pdf: str) -> None:
-    year_counts = Counter(int(song["year"]) for song in songs if "year" in song)
+def generate_year_distribution_pdf(songs: list[dict], output_pdf: str) -> None:
+    year_counts = Counter(int(song["year"]) for song in songs if "year" in song and song["year"].isdigit())
+
+    if (not year_counts):
+        logger.warning("No valid year data found in songs. Skipping year distribution PDF generation.")
+        return
 
     min_year = min(year_counts.keys())
     max_year = max(year_counts.keys())
@@ -152,6 +156,13 @@ def main():
     parser.add_argument("--added-after", type=str, help="Only include songs added after this date (YYYY-MM-DD)")
     parser.add_argument("--edition", type=str, default=None, help="Edition label to display on the cards (e.g., 'Summer 2025')")
     parser.add_argument("--font", type=str, default=None, help="Font family to use in the Typst document (e.g., 'Libertinus Serif', 'Ubuntu'). The font family must be installed on the system!")
+    parser.add_argument(
+        "-c", "--custom-card",
+        action="append",
+        default=[],
+        metavar="QR,TITLE,YEAR,ARTIST,MONTH",
+        help="Add a custom card: qr-string,title,year,artist,month. Can be used multiple times."
+    )
     args = parser.parse_args()
 
     playlist_id = args.playlist_id or os.getenv("PLAYLIST_ID")
@@ -200,6 +211,29 @@ Font:                %s
     songs = get_playlist_songs(sp, playlist_id, verbose=args.verbose, month_lang=args.month_lang, no_day=args.no_day, added_after=args.added_after)
 
     logger.info(f"Number of songs (after filtering): {len(songs)}")
+
+    # Add custom cards to songs list
+    for custom in args.custom_card:
+        # Split by comma, allow empty month
+        parts = [x.strip() for x in custom.split(",")]
+        if len(parts) != 5:
+            logger.error(f"Custom card must have 5 fields: qr-string,title,year,artist,month. Got {len(parts)}: {custom}")
+            continue
+        qr_string, title, year, artist, month = parts
+        # Use a unique id for custom cards
+        custom_id = f"custom_{len(songs)+1}"
+        songs.append({
+            "id": custom_id,
+            "url": qr_string,
+            "name": title,
+            "year": year,
+            "artists": [artist],
+            "month": month,
+            "day": "",
+            "release_date": "",
+            "custom": "true"
+        })
+        logger.info(f"Added custom card '{custom_id}': Title: '{title}', Year: '{year}', Artist: '{artist}', Month: '{month}'")
 
     logger.info("Writing songs to songs.json file")
     with open("songs.json", "w") as file:
