@@ -49,6 +49,21 @@
   )
 }
 
+/// Renders string `s` scaled to fit within `target_width`, with optional text options.
+/// Shows the scaled text, with a maximum font size of 28% of card size.
+#let fit_text_to_width(s, target_width, ..opts) = {
+  context {
+    let base = 10pt
+    let probe = text(size: base, ..opts)[#s]
+    let w = measure(probe).width
+    let ratio = if w == 0pt { 1 } else { target_width / w }
+    let fs = calc.min(base * ratio, 0.28 * card_size)
+    text(size: fs, ..opts)[#s]
+    //linebreak()
+    //text(size: 6pt)[#fs]
+  }
+}
+
 #let text_back_side(song) = {
   square(
     size: card_size,
@@ -85,11 +100,7 @@
         width: 100%,
         align(
           center + horizon,
-          text(
-            weight: "black",
-            song.year,
-            size: 0.28 * card_size
-          )
+          fit_text_to_width(song.year, 0.85 * card_size, weight: "black")
         ),
       ),
       // Song Name
@@ -99,7 +110,7 @@
         align(
           center + horizon,
           text(
-            [_ #song.name _],
+            if ("custom" in song) and song.custom == "true" {[ #song.name ]} else {[_ #song.name _]},
             size: 0.06 * card_size
           )
         )
