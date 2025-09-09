@@ -1,6 +1,8 @@
 # Hitster Card Generator
 
-This project generates printable [Hitster](https://hitstergame.com) cards from a Spotify playlist. It retrieves song information from Spotify, generates QR codes linking to the songs, and creates a duplex printable PDF with cards using Typst.
+This project generates printable [Hitster](https://hitstergame.com) cards from a Spotify playlist. It retrieves song information from Spotify, generates QR codes linking to the songs, and creates a duplex printable PDF with cards using [Typst](https://typst.app).
+
+If you find this DIY Hitster project useful, consider giving it a star :) !
 
 | Page Front | Page Back |
 | ------------- | ------------- |
@@ -15,7 +17,7 @@ This project generates printable [Hitster](https://hitstergame.com) cards from a
 
 ## ⚙️ Prerequisites
 
--   Python 3.9+  
+-   Python ^3.12 
 -   Poetry (for dependency management)  
 -   Spotify Developer Account (to obtain client credentials)
 
@@ -42,7 +44,7 @@ This project generates printable [Hitster](https://hitstergame.com) cards from a
     poetry run python main.py
     ```  
 2.  Print the `hitster.pdf` file:  
-    -   Open the `hitster.pdf` file and print it.  
+    -   Open the `hitster.pdf` file and duplex print it.  
     -   Cut along the provided markings to create the Hitster cards.
 
 ## 🎲 How to Play
